@@ -2,8 +2,8 @@ package app
 
 import (
 	"fmt"
-	config "server/configs"
 	v1 "server/internal/api/v1"
+	config "server/internal/app/config"
 
 	"github.com/gin-gonic/gin"
 )

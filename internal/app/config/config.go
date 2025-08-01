@@ -26,19 +26,19 @@ var Conf *Config
 func LoadConfig() error {
 
 	// 设置配置文件路径和名称
-	viper.AddConfigPath("./configs")
+	viper.AddConfigPath("../configs")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 
 	// 读取配置文件
 	if err := viper.ReadInConfig(); err != nil {
-		return fmt.Errorf("读取配置文件失败: %v", err)
+		panic(fmt.Sprintf("读取配置文件失败: %v", err))
 	}
 
 	// 将配置文件内容解析到 Conf 变量中
 	Conf = &Config{}
 	if err := viper.Unmarshal(Conf); err != nil {
-		return fmt.Errorf("解析配置文件失败: %v", err)
+		panic(fmt.Sprintf("解析配置文件失败: %v", err))
 	}
 
 	return nil

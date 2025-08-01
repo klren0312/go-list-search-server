@@ -1,7 +1,7 @@
 package app
 
 import (
-	config "server/configs"
+	config "server/internal/app/config"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/xorm"
