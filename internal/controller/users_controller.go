@@ -7,18 +7,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type UserController struct {
-	UserService *service.UserService
+type UsersController struct {
+	UsersService *service.UsersService
 }
 
-func NewUserController(UserService *service.UserService) *UserController {
-	return &UserController{
-		UserService: UserService,
+func NewUsersController(UsersService *service.UsersService) *UsersController {
+	return &UsersController{
+		UsersService: UsersService,
 	}
 }
 
-func (uc *UserController) GetUsers(c *gin.Context) {
-	users, err := uc.UserService.GetUsers()
+func (uc *UsersController) GetUsers(c *gin.Context) {
+	users, err := uc.UsersService.GetUsers()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 1,

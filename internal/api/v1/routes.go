@@ -13,10 +13,10 @@ func SetupRoutes(r *gin.Engine, engine *xorm.Engine) {
 	user := r.Group("/user")
 	{
 		// 创建 UserService 实例
-		UserService := service.NewUserService(engine)
+		UsersService := service.NewUsersService(engine)
 		// 创建 UserController 实例
-		UserController := controller.NewUserController(UserService)
+		UsersController := controller.NewUsersController(UsersService)
 
-		user.GET("/", UserController.GetUsers)
+		user.GET("/", UsersController.GetUsers)
 	}
 }
