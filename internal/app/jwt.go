@@ -1,6 +1,7 @@
 package app
 
 import (
+	"server/internal/service"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -8,6 +9,7 @@ import (
 )
 
 var identityKey = "id"
+var userService *service.UsersService
 
 type User struct {
 	Username string
@@ -18,12 +20,49 @@ type login struct {
 	Password string `form:"password" json:"password" binding:"required"`
 }
 
+// GetUserService 获取用户服务实例
+func GetUserService() *service.UsersService {
+	if userService == nil {
+		userService = service.NewUsersService(Engine)
+	}
+	return userService
+}
+
+// InitJWT 初始化JWT中间件
+func InitJWT(r *gin.Engine) (*jwt.GinJWTMiddleware, error) {
+	authMiddleware, err := jwt.New(initJwtParams())
+	if err != nil {
+		return nil, err
+	}
+
+	// 注册JWT相关路由
+	r.POST("/login", authMiddleware.LoginHandler)
+	r.GET("/refresh_token", authMiddleware.RefreshHandler)
+
+	// 使用JWT中间件保护的路由组
+	auth := r.Group("/")
+	auth.Use(authMiddleware.MiddlewareFunc())
+	{
+		auth.GET("/hello", func(c *gin.Context) {
+			claims := jwt.ExtractClaims(c)
+			user, _ := c.Get(identityKey)
+			c.JSON(200, gin.H{
+				"username": claims[identityKey],
+				"user":     user.(*User),
+				"message":  "Hello, welcome to use JWT!",
+			})
+		})
+	}
+
+	return authMiddleware, nil
+}
+
 func initJwtParams() *jwt.GinJWTMiddleware {
 	return &jwt.GinJWTMiddleware{
-		Realm:       "test zone",
-		Key:         []byte("secret key"),
-		Timeout:     time.Hour,
-		MaxRefresh:  time.Hour,
+		Realm:       "order system",       // 领域
+		Key:         []byte("secret key"), // 密钥
+		Timeout:     time.Hour * 24,       // 令牌有效期24小时
+		MaxRefresh:  time.Hour * 24 * 7,   // 令牌可刷新7天
 		IdentityKey: identityKey,
 		PayloadFunc: payloadFunc(),
 
@@ -80,19 +119,34 @@ func authenticator() func(c *gin.Context) (interface{}, error) {
 		userID := loginVals.Username
 		password := loginVals.Password
 
-		if (userID == "admin" && password == "admin") || (userID == "test" && password == "test") {
+		// 使用用户服务验证用户名和密码
+		userService := GetUserService()
+		user, isValid, err := userService.VerifyPassword(userID, password)
+		if err != nil {
+			return nil, jwt.ErrFailedAuthentication
+		}
+
+		if isValid && user != nil {
 			return &User{
 				Username: userID,
 			}, nil
 		}
+
 		return nil, jwt.ErrFailedAuthentication
 	}
 }
 
 func authorizator() func(data interface{}, c *gin.Context) bool {
 	return func(data interface{}, c *gin.Context) bool {
-		if v, ok := data.(*User); ok && v.Username == "admin" {
-			return true
+		if v, ok := data.(*User); ok {
+			// 根据用户名获取用户信息
+			userService := GetUserService()
+			user, err := userService.GetUserByUsername(v.Username)
+			if err != nil || user == nil {
+				return false
+			}
+
+			return user.Type >= 0
 		}
 		return false
 	}
